@@ -1,32 +1,53 @@
 package shop.devosify.riya.repository
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import shop.devosify.riya.models.GptRequest
-import shop.devosify.riya.models.GptResponse
-import shop.devosify.riya.service.RetrofitClient
 import shop.devosify.riya.service.GptApiService
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import shop.devosify.riya.utils.SecureStorage
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class GptRepository {
-
-    private val gptApiService = RetrofitClient.gptRetrofit.create(GptApiService::class.java)
-
-    fun generateText(prompt: String, callback: (String?) -> Unit) {
-        val gptRequest = GptRequest(prompt = prompt)
-
-        gptApiService.getResponseFromGpt(gptRequest).enqueue(object : Callback<GptResponse> {
-            override fun onResponse(call: Call<GptResponse>, response: Response<GptResponse>) {
-                if (response.isSuccessful) {
-                    callback(response.body()?.choices?.firstOrNull()?.text) // Return generated text
+@Singleton
+class GptRepository @Inject constructor(
+    private val gptApiService: GptApiService,
+    private val secureStorage: SecureStorage
+) {
+    suspend fun generateText(
+        prompt: String, 
+        forceGpt4: Boolean = false
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val useGpt4 = forceGpt4 || secureStorage.getBoolean(PREF_USE_GPT4, false)
+            val model = if (useGpt4) {
+                "gpt-4-turbo-preview"
+            } else {
+                "gpt-3.5-turbo"  // Default model
+            }
+            
+            val request = GptRequest(
+                model = model,
+                prompt = prompt
+            )
+            
+            val response = gptApiService.getResponseFromGpt(request)
+            
+            if (response.isSuccessful) {
+                val text = response.body()?.choices?.firstOrNull()?.text
+                if (text != null) {
+                    Result.success(text)
                 } else {
-                    callback(null) // Handle error
+                    Result.failure(Exception("No text generated"))
                 }
+            } else {
+                Result.failure(Exception("Failed to generate text: ${response.code()}"))
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
-            override fun onFailure(call: Call<GptResponse>, t: Throwable) {
-                callback(null) // Handle failure
-            }
-        })
+    companion object {
+        private const val PREF_USE_GPT4 = "use_gpt4"
     }
 }

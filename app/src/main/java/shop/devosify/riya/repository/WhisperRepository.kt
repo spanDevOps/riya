@@ -1,36 +1,32 @@
 package shop.devosify.riya.repository
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import shop.devosify.riya.models.WhisperResponse
-import shop.devosify.riya.service.RetrofitClient
 import shop.devosify.riya.service.WhisperApiService
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class WhisperRepository {
-
-    private val whisperApiService = RetrofitClient.retrofit.create(WhisperApiService::class.java)
-
-    fun transcribeAudio(file: File, callback: (String?) -> Unit) {
-        val requestFile = file.asRequestBody("audio/wav".toMediaTypeOrNull())
-        val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-
-        whisperApiService.transcribeAudio(body).enqueue(object : Callback<WhisperResponse> {
-            override fun onResponse(call: Call<WhisperResponse>, response: Response<WhisperResponse>) {
-                if (response.isSuccessful) {
-                    callback(response.body()?.text) // Return the transcription text
-                } else {
-                    callback(null) // Handle error, possibly display an error message
-                }
+@Singleton
+class WhisperRepository @Inject constructor(
+    private val whisperApiService: WhisperApiService
+) {
+    suspend fun transcribeAudio(file: File): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val requestFile = file.asRequestBody("audio/wav".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
+            
+            val response = whisperApiService.transcribeAudio(body)
+            if (response.isSuccessful) {
+                Result.success(response.body()?.text ?: "")
+            } else {
+                Result.failure(Exception("Transcription failed: ${response.code()}"))
             }
-
-            override fun onFailure(call: Call<WhisperResponse>, t: Throwable) {
-                callback(null) // Handle failure (network error, etc.)
-            }
-        })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

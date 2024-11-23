@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "491273009969",
+    "project_id": "riya-dae4b",
+    "storage_bucket": "riya-dae4b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:491273009969:android:c4930a915f9a4e2cff8e10",
+        "android_client_info": {
+          "package_name": "shop.devopsify.riya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVNtfUYyBHTs4J7ZW_-jGhHQefQeETtBw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

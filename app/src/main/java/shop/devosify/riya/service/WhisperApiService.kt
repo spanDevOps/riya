@@ -1,21 +1,23 @@
 package shop.devosify.riya.service
 
 import okhttp3.MultipartBody
-import retrofit2.Call
-import retrofit2.http.POST
-import retrofit2.http.Multipart
-import retrofit2.http.Part
+import retrofit2.Response
 import retrofit2.http.Headers
-import shop.devosify.riya.models.WhisperResponse
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.Part
 
 interface WhisperApiService {
-
-    @Headers("Authorization: Bearer openai_api_key")
     @Multipart
     @POST("v1/audio/transcriptions")
-    fun transcribeAudio(
-        @Part audio: MultipartBody.Part,
-        @Part("model") model: String = "whisper-1",
-        @Part("language") language: String = "en"
-    ): Call<WhisperResponse> // Changed from ResponseBody to WhisperResponse
+    @Headers("Content-Type: multipart/form-data")
+    suspend fun transcribeAudio(
+        @Part file: MultipartBody.Part,
+        @Part("model") model: MultipartBody.Part = MultipartBody.Part.createFormData("model", "whisper-1"),
+        @Part("language") language: MultipartBody.Part = MultipartBody.Part.createFormData("language", "en")
+    ): Response<TranscriptionResponse>
 }
+
+data class TranscriptionResponse(
+    val text: String
+)
